@@ -1,0 +1,12 @@
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+
+# Ignore environment variables file
+.env
+
+# virtual env 
+.venv/
+
+# fichier générés
+Data/
