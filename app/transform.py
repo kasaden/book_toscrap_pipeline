@@ -7,6 +7,7 @@ Nettoyer et transformer les données brutes extraites par le scraper.
 """
 
 import logging
+from datetime import datetime, timezone
 
 import pandas as pd
 
@@ -66,12 +67,13 @@ def transform_books(raw_books: list[dict]) -> pd.DataFrame:
     """
     if not raw_books:
         logger.warning("Aucune donnée brute à transformer.")
-        return pd.DataFrame(columns=["title", "price", "rating", "category"])
+        return pd.DataFrame(columns=["title", "price", "rating", "category", "scraped_at"])
 
     df = pd.DataFrame(raw_books)
 
     df["price"] = df["price"].apply(clean_price)
     df["rating"] = df["rating"].apply(clean_rating)
+    df["scraped_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
     rows_before = len(df)
     df = df.dropna(subset=["title"])

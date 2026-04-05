@@ -51,8 +51,21 @@ def run_pipeline() -> None:
     # --- Load ---
     logger.info("=== LOAD ===")
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    df.to_csv(OUTPUT_FILE, index=False, encoding="utf-8")
-    logger.info("Fichier CSV sauvegardé : %s (%d lignes)", OUTPUT_FILE, len(df))
+
+    # Append au fichier existant pour conserver l'historique des runs.
+    # Si le fichier n'existe pas encore, on écrit l'en-tête.
+    write_header = not OUTPUT_FILE.exists()
+    df.to_csv(
+        OUTPUT_FILE,
+        mode="a",
+        header=write_header,
+        index=False,
+        encoding="utf-8",
+    )
+
+    logger.info(
+        "Fichier CSV enrichi : %s (+%d lignes ce run)", OUTPUT_FILE, len(df)
+    )
 
     logger.info("=== Pipeline terminé avec succès ===")
 
