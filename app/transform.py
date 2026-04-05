@@ -31,7 +31,7 @@ RATING_MAP = {
 
 def clean_price(raw_price: str | None) -> float | None:
     """Convertit '£12.99' en 12.99. Retourne None si le format est invalide."""
-    if not raw_price:
+    if not isinstance(raw_price, str):
         return None
     try:
         cleaned = raw_price.replace("£", "").replace("Â", "").strip()
@@ -43,7 +43,7 @@ def clean_price(raw_price: str | None) -> float | None:
 
 def clean_rating(raw_rating: str | None) -> int | None:
     """Convertit 'Three' en 3. Retourne None si la valeur est inconnue."""
-    if not raw_rating:
+    if not isinstance(raw_rating, str):
         return None
     value = RATING_MAP.get(raw_rating)
     if value is None:
@@ -79,5 +79,41 @@ def transform_books(raw_books: list[dict]) -> pd.DataFrame:
     if rows_dropped:
         logger.warning("%d lignes sans titre supprimées.", rows_dropped)
 
+    _validate(df)
+
     logger.info("Transformation terminée : %d livres nettoyés.", len(df))
     return df
+
+
+# ---------------------------------------------------------------------------
+# Validation — détecte les anomalies après nettoyage
+# ---------------------------------------------------------------------------
+
+# Au-delà de ce seuil de valeurs manquantes, on considère qu'il y a un problème
+MAX_NULL_PERCENT = 5
+
+def _validate(df: pd.DataFrame) -> None:
+    """
+    Vérifie la qualité des données après transformation.
+    Logue un ERROR si un champ dépasse le seuil de valeurs manquantes,
+    ce qui signale probablement un changement dans le HTML du site.
+    """
+    total = len(df)
+    if total == 0:
+        return
+
+    for column in ("title", "price", "rating"):
+        null_count = df[column].isna().sum()
+        null_percent = null_count / total * 100
+
+        if null_percent > MAX_NULL_PERCENT:
+            logger.error(
+                "ALERTE QUALITÉ — '%s' : %.1f%% de valeurs manquantes "
+                "(%d/%d). Le HTML du site a peut-être changé.",
+                column, null_percent, null_count, total,
+            )
+        elif null_count > 0:
+            logger.warning(
+                "'%s' : %d valeurs manquantes (%.1f%%).",
+                column, null_count, null_percent,
+            )
