@@ -1,0 +1,6 @@
+services:
+  scraper:
+    build: .
+    volumes:
+      - ./data:/pipeline/data
+    restart: unless-stopped
