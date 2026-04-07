@@ -10,27 +10,53 @@ app/
 ├── transform.py    # Transform — nettoyage des prix et notes + validation
 └── main.py         # Orchestration du pipeline ETL
 data/
-└── books.csv       # Fichier de sortie
+└── books.csv       # Fichier de sortie (alimenté en append à chaque run)
+Dockerfile          # Image Python 3.12-slim + cron
+docker-compose.yml  # Monte data/ en volume persistant
+crontab.sh          # Entrypoint : lance le pipeline puis planifie via cron
 ```
 
-## Installation
+## Utilisation
+
+### Avec Docker (recommandé)
+
+```bash
+docker compose up --build
+```
+
+Le pipeline tourne **immédiatement** au démarrage, puis **toutes les 2 minutes** en automatique.
+
+Les données sont persistées dans `data/books.csv` sur la machine hôte via un volume.
+
+Pour arrêter le conteneur :
+
+```bash
+docker compose down
+```
+
+### En local
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-```
-
-## Utilisation
-
-```bash
 cd app
 python main.py
 ```
 
-Le pipeline extrait 1000 livres avec 4 champs : **titre**, **prix**, **note** (1-5), **catégorie**.
+## Ce que fait le pipeline
 
-Le CSV est généré dans `data/books.csv`.
+Le pipeline extrait ~1000 livres avec 4 champs : **titre**, **prix**, **note** (1-5), **catégorie**.
+
+Chaque run **ajoute** les nouvelles lignes au CSV existant (mode append) sans écraser l'historique.
+
+## Logs
+
+Les logs sont visibles en temps réel :
+
+```bash
+docker compose logs -f
+```
 
 ## Gestion des erreurs
 
