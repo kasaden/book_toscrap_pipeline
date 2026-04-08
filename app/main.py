@@ -8,8 +8,10 @@ Point d'entrée du pipeline ETL.
 """
 
 import logging
+import sys
 
 from config import DATA_DIR, LOG_FORMAT, LOG_LEVEL, OUTPUT_FILE
+from notify import notify_failure
 from scraper import scrape_all_books
 from transform import transform_books
 
@@ -30,41 +32,43 @@ logger = logging.getLogger(__name__)
 
 def run_pipeline() -> None:
     """Exécute le pipeline ETL complet : Extract → Transform → Load."""
+    try:
+        # --- Extract ---
+        logger.info("=== EXTRACT ===")
+        raw_books = scrape_all_books()
+        if not raw_books:
+            raise RuntimeError("Aucune donnée extraite.")
 
-    # --- Extract ---
-    logger.info("=== EXTRACT ===")
-    raw_books = scrape_all_books()
-    if not raw_books:
-        logger.error("Aucune donnée extraite. Arrêt du pipeline.")
-        return
+        # --- Transform ---
+        logger.info("=== TRANSFORM ===")
+        df = transform_books(raw_books)
+        if df.empty:
+            raise RuntimeError("Aucune donnée après transformation.")
 
-    # --- Transform ---
-    logger.info("=== TRANSFORM ===")
-    df = transform_books(raw_books)
-    if df.empty:
-        logger.error("Aucune donnée après transformation. Arrêt du pipeline.")
-        return
+        # --- Load ---
+        logger.info("=== LOAD ===")
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    # --- Load ---
-    logger.info("=== LOAD ===")
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
+        # Append au fichier existant pour conserver l'historique des runs.
+        # Si le fichier n'existe pas encore, on écrit l'en-tête.
+        write_header = not OUTPUT_FILE.exists()
+        df.to_csv(
+            OUTPUT_FILE,
+            mode="a",
+            header=write_header,
+            index=False,
+            encoding="utf-8",
+        )
 
-    # Append au fichier existant pour conserver l'historique des runs.
-    # Si le fichier n'existe pas encore, on écrit l'en-tête.
-    write_header = not OUTPUT_FILE.exists()
-    df.to_csv(
-        OUTPUT_FILE,
-        mode="a",
-        header=write_header,
-        index=False,
-        encoding="utf-8",
-    )
+        logger.info(
+            "Fichier CSV enrichi : %s (+%d lignes ce run)", OUTPUT_FILE, len(df)
+        )
+        logger.info("=== Pipeline terminé avec succès ===")
 
-    logger.info(
-        "Fichier CSV enrichi : %s (+%d lignes ce run)", OUTPUT_FILE, len(df)
-    )
-
-    logger.info("=== Pipeline terminé avec succès ===")
+    except Exception as e:
+        logger.exception("=== Pipeline en ÉCHEC : %s ===", e)
+        notify_failure(e)
+        sys.exit(1)   # code de sortie non-zéro → cron sait que ça a échoué
 
 
 if __name__ == "__main__":
