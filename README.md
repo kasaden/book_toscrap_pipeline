@@ -6,6 +6,7 @@ Pipeline ETL en Python qui scrape le catalogue [Books to Scrape](https://books.t
 
 ```
 app/
+├── config.py       # Configuration centralisée (URLs, timeouts, retry, chemins)
 ├── scraper.py      # Extract  — scraping par catégorie avec pagination
 ├── transform.py    # Transform — nettoyage des prix et notes + validation
 └── main.py         # Orchestration du pipeline ETL
@@ -24,7 +25,7 @@ crontab.sh          # Entrypoint : lance le pipeline puis planifie via cron
 docker compose up --build
 ```
 
-Le pipeline tourne **immédiatement** au démarrage, puis **toutes les 2 minutes** en automatique.
+Le pipeline tourne **immédiatement** au démarrage, puis **tous les jours à 3 heures** en automatique.
 
 Les données sont persistées dans `data/books.csv` sur la machine hôte via un volume.
 
@@ -60,6 +61,7 @@ docker compose logs -f
 
 ## Gestion des erreurs
 
-- Erreurs réseau / timeout : le pipeline continue avec les données disponibles
+- Erreurs réseau / timeout : retry automatique avec backoff exponentiel (3 tentatives, 2–10s entre chaque)
+- Toutes les tentatives échouent : le pipeline continue avec les données disponibles
 - Champ HTML manquant : valeur ignorée, log warning
 - Changement de structure HTML : alerte qualité si > 5% de valeurs manquantes sur un champ
