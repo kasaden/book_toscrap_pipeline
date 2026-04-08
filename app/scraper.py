@@ -14,8 +14,9 @@ import time
 # bibliothèques externes — à installer via pip
 import requests
 from bs4 import BeautifulSoup
+from tenacity import retry, stop_after_attempt, wait_exponential, before_log, after_log
 
-from config import BASE_URL, DELAY_BETWEEN_REQUESTS, HEADERS, REQUEST_TIMEOUT
+from config import BASE_URL, DELAY_BETWEEN_REQUESTS, HEADERS, REQUEST_TIMEOUT, RETRY_ATTEMPTS, RETRY_WAIT_MIN, RETRY_WAIT_MAX
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -30,18 +31,36 @@ logger = logging.getLogger(__name__)
 # Couche HTTP — une seule fonction fait les requêtes
 # ---------------------------------------------------------------------------
 
+@retry(
+    stop=stop_after_attempt(RETRY_ATTEMPTS),
+    wait=wait_exponential(multiplier=1, min=RETRY_WAIT_MIN, max=RETRY_WAIT_MAX),
+    before=before_log(logger, logging.DEBUG),
+    after=after_log(logger, logging.WARNING),
+    reraise=False,
+)
+def _fetch_page_with_retry(url: str) -> requests.Response:
+    """
+    Effectue la requête HTTP avec retry automatique.
+    Lève une exception si le statut n'est pas 200, ce qui déclenche un retry.
+    """
+    response = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+    if response.status_code != 200:
+        raise requests.exceptions.HTTPError(
+            f"Statut inattendu {response.status_code} pour : {url}"
+        )
+    return response
+
+
 def fetch_page(url: str) -> BeautifulSoup | None:
     """
     Télécharge une page et retourne un objet BeautifulSoup.
+    Réessaie jusqu'à RETRY_ATTEMPTS fois avec backoff exponentiel.
 
-    Retourne None si :
-    - le site est injoignable (réseau, timeout)
-    - le serveur répond autre chose qu'un 200
-
+    Retourne None si toutes les tentatives échouent.
     Ne lève jamais d'exception vers l'appelant.
     """
     try:
-        response = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
+        response = _fetch_page_with_retry(url)
     except requests.exceptions.ConnectionError:
         logger.error("Impossible de joindre le site : %s (erreur réseau)", url)
         return None
@@ -49,15 +68,7 @@ def fetch_page(url: str) -> BeautifulSoup | None:
         logger.error("Délai dépassé pour : %s (timeout %ss)", url, REQUEST_TIMEOUT)
         return None
     except requests.exceptions.RequestException as exc:
-        logger.error("Erreur HTTP inattendue pour %s : %s", url, exc)
-        return None
-
-    if response.status_code != 200:
-        logger.warning(
-            "Page ignorée — statut %s pour : %s",
-            response.status_code,
-            url,
-        )
+        logger.error("Échec après %d tentatives pour %s : %s", RETRY_ATTEMPTS, url, exc)
         return None
 
     time.sleep(DELAY_BETWEEN_REQUESTS)

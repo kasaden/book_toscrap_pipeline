@@ -15,6 +15,10 @@ BASE_URL = "https://books.toscrape.com"
 REQUEST_TIMEOUT = 10           # secondes avant abandon d'une requête
 DELAY_BETWEEN_REQUESTS = 0.5   # secondes de pause entre chaque appel HTTP
 
+RETRY_ATTEMPTS = 3             # nombre de tentatives avant abandon
+RETRY_WAIT_MIN = 2             # secondes d'attente minimum entre deux tentatives
+RETRY_WAIT_MAX = 10            # secondes d'attente maximum entre deux tentatives
+
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (compatible; BookScraper/1.0; educational project)"
