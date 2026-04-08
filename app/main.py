@@ -11,7 +11,7 @@ import logging
 import sys
 
 from config import DATA_DIR, LOG_FORMAT, LOG_LEVEL, OUTPUT_FILE
-from notify import notify_failure
+from notify import notify_failure, notify_success
 from scraper import scrape_all_books
 from transform import transform_books
 
@@ -64,6 +64,7 @@ def run_pipeline() -> None:
             "Fichier CSV enrichi : %s (+%d lignes ce run)", OUTPUT_FILE, len(df)
         )
         logger.info("=== Pipeline terminé avec succès ===")
+        notify_success(len(df))
 
     except Exception as e:
         logger.exception("=== Pipeline en ÉCHEC : %s ===", e)
