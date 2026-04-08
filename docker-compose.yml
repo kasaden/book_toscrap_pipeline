@@ -3,4 +3,6 @@ services:
     build: .
     volumes:
       - ./data:/pipeline/data
+    env_file:
+      - .env
     restart: unless-stopped
