@@ -1,3 +1,6 @@
+#!/bin/bash
+# Indique au noyau quel programme utiliser pour exécuter ce script
+
 # Définir le chemin vers l'exécutable
 PYTHON=/usr/local/bin/python
 

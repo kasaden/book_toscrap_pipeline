@@ -13,9 +13,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code and entrypoint
 COPY app/ ./app/
 COPY crontab.sh .
-RUN chmod +x crontab.sh
+RUN sed -i 's/\r//' crontab.sh && chmod +x crontab.sh
 
 # Data directory (overridden by volume in docker-compose)
 RUN mkdir -p data
 
+# Run the crontab
 CMD ["./crontab.sh"]
+
+# Run the crontab script avec interpéteur explicite (ici bash)
+# CMD ["bash", "crontab.sh"]
