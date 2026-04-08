@@ -15,20 +15,13 @@ import time
 import requests
 from bs4 import BeautifulSoup
 
+from config import BASE_URL, DELAY_BETWEEN_REQUESTS, HEADERS, REQUEST_TIMEOUT
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-BASE_URL = "https://books.toscrape.com"
 CATALOGUE_URL = f"{BASE_URL}/catalogue"
-REQUEST_TIMEOUT = 10          # secondes avant abandon d'une requête
-DELAY_BETWEEN_REQUESTS = 0.5  # secondes de pause entre chaque appel HTTP
-
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (compatible; BookScraper/1.0; educational project)"
-    )
-}
 
 logger = logging.getLogger(__name__)
 

@@ -8,8 +8,8 @@ Point d'entrée du pipeline ETL.
 """
 
 import logging
-from pathlib import Path
 
+from config import DATA_DIR, LOG_FORMAT, LOG_LEVEL, OUTPUT_FILE
 from scraper import scrape_all_books
 from transform import transform_books
 
@@ -17,12 +17,9 @@ from transform import transform_books
 # Configuration
 # ---------------------------------------------------------------------------
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-OUTPUT_FILE = DATA_DIR / "books.csv"
-
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
+    level=getattr(logging, LOG_LEVEL),
+    format=LOG_FORMAT,
 )
 logger = logging.getLogger(__name__)
 
