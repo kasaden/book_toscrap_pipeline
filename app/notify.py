@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 def _send(subject: str, body: str) -> None:
     """Fonction interne : construit et envoie un e-mail via SMTP/STARTTLS."""
-    if not all([SMTP_USER, SMTP_PASSWORD, ALERT_EMAIL]):
+    if not all([SMTP_USER, SMTP_PASSWORD]) or not ALERT_EMAIL:
         logger.warning(
             "Notification ignorée : SMTP_USER, SMTP_PASSWORD ou ALERT_EMAIL "
             "non définis dans les variables d'environnement."
@@ -33,7 +33,7 @@ def _send(subject: str, body: str) -> None:
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = SMTP_USER
-    msg["To"] = ALERT_EMAIL
+    msg["To"] = ", ".join(ALERT_EMAIL)
     msg.set_content(body)
 
     try:
@@ -41,7 +41,7 @@ def _send(subject: str, body: str) -> None:
             server.starttls()
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.send_message(msg)
-        logger.info("E-mail envoyé à %s — %s", ALERT_EMAIL, subject)
+        logger.info("E-mail envoyé à %s — %s", ", ".join(ALERT_EMAIL), subject)
     except Exception as smtp_error:
         logger.warning("Échec de l'envoi de l'e-mail : %s", smtp_error)
 

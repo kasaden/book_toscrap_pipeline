@@ -48,4 +48,4 @@ SMTP_HOST     = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT     = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER     = os.getenv("SMTP_USER")        # expéditeur
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")    # mot de passe d'application Gmail
-ALERT_EMAIL   = os.getenv("ALERT_EMAIL")      # destinataire de l'alerte
+ALERT_EMAIL   = [a.strip() for a in os.getenv("ALERT_EMAIL", "").split(",") if a.strip()]
